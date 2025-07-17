@@ -1,0 +1,332 @@
+#!/bin/bash
+
+# Global Claude Code CLI Prepare Commit Message Hook
+# This hook generates formatted commit messages for all repositories
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+# Global configuration
+GLOBAL_CONFIG="$HOME/.claude-commit-global-config.yaml"
+LOCAL_CONFIG=".claude-commit-config.yaml"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Helper functions
+log_info() {
+    echo -e "${BLUE}[Claude Hook]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[Claude Hook]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[Claude Hook]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[Claude Hook]${NC} $1"
+}
+
+# Load configuration (local overrides global)
+load_config() {
+    local temp_config
+    temp_config=$(mktemp)
+
+    # Start with empty config
+    echo "{}" > "$temp_config"
+
+    # Check if global config exists
+    if [ ! -f "$GLOBAL_CONFIG" ]; then
+        log_error "Global configuration file not found at $GLOBAL_CONFIG"
+        log_error "Please run the installation script or copy claude-commit-global-config.yaml to $GLOBAL_CONFIG"
+        rm "$temp_config"
+        exit 1
+    fi
+    
+    # Load global config first
+    if ! cat "$GLOBAL_CONFIG" | yq eval -o=json > "$temp_config" 2>/dev/null; then
+        log_error "Failed to parse global configuration file: $GLOBAL_CONFIG"
+        log_error "Please check YAML syntax and ensure yq is installed"
+        rm "$temp_config"
+        exit 1
+    fi
+
+    # Override with local config if it exists
+    if [ -f "$LOCAL_CONFIG" ]; then
+        local local_json
+        local_json=$(yq eval -o=json "$LOCAL_CONFIG" 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$local_json" ]; then
+            echo "$local_json" | yq eval-all '. as $item ireduce ({}; . * $item)' "$temp_config" - 2>/dev/null > "$temp_config.new" && mv "$temp_config.new" "$temp_config"
+        else
+            log_warning "Local configuration file exists but failed to parse: $LOCAL_CONFIG"
+        fi
+    fi
+
+    cat "$temp_config"
+    rm "$temp_config"
+}
+
+# Validate configuration has required fields
+validate_config() {
+    local config=$1
+    
+    # Check for required prompt_template
+    local prompt_template
+    prompt_template=$(echo "$config" | yq eval '.prompt_template' - 2>/dev/null)
+    
+    if [ -z "$prompt_template" ] || [ "$prompt_template" = "null" ]; then
+        log_error "Configuration validation failed: prompt_template is missing or empty"
+        log_error "Please check your configuration file: $GLOBAL_CONFIG"
+        return 1
+    fi
+    
+    # Check if template contains required placeholders
+    if ! echo "$prompt_template" | grep -q "{diff}"; then
+        log_error "Configuration validation failed: prompt_template missing {diff} placeholder"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Get config value
+get_config_value() {
+    local config=$1
+    local key=$2
+    local default=$3
+    echo "$config" | yq eval ".$key // $default" - 2>/dev/null || echo "$default"
+}
+
+# Check if current repository should be excluded
+is_repo_excluded() {
+    local config=$1
+    local repo_name
+    repo_name=$(basename "$(git rev-parse --show-toplevel)" 2>/dev/null)
+
+    local excluded_repos
+    excluded_repos=$(echo "$config" | yq eval '.excluded_repositories[]' - 2>/dev/null)
+
+    echo "$excluded_repos" | grep -q "^$repo_name$" && echo "true" || echo "false"
+}
+
+# Check if pattern matches any in skip patterns
+matches_skip_pattern() {
+    local text=$1
+    local config=$2
+
+    local patterns
+    patterns=$(echo "$config" | yq eval '.skip_patterns[]' - 2>/dev/null)
+
+    while IFS= read -r pattern; do
+        if [ -n "$pattern" ] && echo "$text" | grep -q "$pattern"; then
+            echo "true"
+            return
+        fi
+    done <<< "$patterns"
+
+    echo "false"
+}
+
+# Filter diff to exclude ignored files
+filter_diff() {
+    local diff=$1
+    local config=$2
+
+    local ignore_patterns
+    ignore_patterns=$(echo "$config" | yq eval '.file_ignore_patterns[]' - 2>/dev/null)
+
+    # If no ignore patterns, return original diff
+    if [ -z "$ignore_patterns" ]; then
+        echo "$diff"
+        return
+    fi
+
+    # Create temp file with patterns
+    local temp_patterns
+    temp_patterns=$(mktemp)
+    echo "$ignore_patterns" > "$temp_patterns"
+
+    # Filter out ignored files
+    echo "$diff" | awk -v patterns_file="$temp_patterns" '
+    BEGIN {
+        while ((getline pattern < patterns_file) > 0) {
+            if (pattern != "") {
+                ignore_list[++ignore_count] = pattern
+            }
+        }
+        close(patterns_file)
+    }
+    /^diff --git/ {
+        file = $4
+        gsub(/^b\//, "", file)
+        skip = 0
+        for (i = 1; i <= ignore_count; i++) {
+            if (match(file, ignore_list[i])) {
+                skip = 1
+                break
+            }
+        }
+    }
+    !skip { print }
+    '
+
+    rm "$temp_patterns"
+}
+
+# Generate commit message
+generate_commit_message() {
+    local diff=$1
+    local config=$2
+
+    local max_subject_length
+    local max_body_length
+    max_subject_length=$(get_config_value "$config" "max_subject_length" "50")
+    max_body_length=$(get_config_value "$config" "max_body_line_length" "72")
+
+    local temp_prompt
+    temp_prompt=$(mktemp)
+
+    # Get repository context
+    local repo_name
+    repo_name=$(basename "$(git rev-parse --show-toplevel)" 2>/dev/null)
+
+    # Get prompt template from config (already validated)
+    local prompt_template
+    prompt_template=$(echo "$config" | yq eval '.prompt_template' - 2>/dev/null)
+
+    # Replace template variables
+    local formatted_prompt
+    formatted_prompt="$prompt_template"
+    formatted_prompt="${formatted_prompt//\{repo_name\}/$repo_name}"
+    formatted_prompt="${formatted_prompt//\{max_subject_length\}/$max_subject_length}"
+    formatted_prompt="${formatted_prompt//\{max_body_length\}/$max_body_length}"
+    formatted_prompt="${formatted_prompt//\{diff\}/$diff}"
+
+    # Convert \n to actual newlines
+    echo -e "$formatted_prompt" > "$temp_prompt"
+
+    log_info "Generating commit message with Claude Code CLI..."
+
+    local claude_response
+    claude_response=$(cat "$temp_prompt" | claude 2>&1)
+    local claude_exit_code=$?
+
+    # Debug output
+    log_info "Claude exit code: $claude_exit_code"
+    if [ $claude_exit_code -ne 0 ]; then
+        log_error "Claude error output: $claude_response"
+    fi
+
+    rm "$temp_prompt"
+
+    if [ $claude_exit_code -eq 0 ] && [ -n "$claude_response" ]; then
+        # Extract full commit message (everything between code blocks)
+        local commit_msg
+        commit_msg=$(echo "$claude_response" | sed -n '/^```$/,/^```$/p' | sed '1d;$d' | sed 's/^[[:space:]]*$//' | sed '/^$/N;/^\n$/d')
+
+        if [ -n "$commit_msg" ]; then
+            echo "$commit_msg" > "$COMMIT_MSG_FILE"
+
+            echo ""
+            log_success "Generated commit message for $repo_name:"
+            echo "========================"
+            echo "$commit_msg"
+            echo "========================"
+            echo ""
+            echo "Full analysis:"
+            echo "$claude_response" | head -20
+            echo ""
+            log_info "Edit the message if needed, or proceed with the commit."
+            return 0
+        fi
+    fi
+
+    log_error "Failed to generate commit message"
+    return 1
+}
+
+# Main execution
+main() {
+    # Only run for regular commits
+    if [ "$COMMIT_SOURCE" != "" ] && [ "$COMMIT_SOURCE" != "message" ]; then
+        exit 0
+    fi
+
+    # Skip during git rebase operations to preserve commit messages
+    if [ -d "$(git rev-parse --git-dir)/rebase-merge" ] || [ -d "$(git rev-parse --git-dir)/rebase-apply" ]; then
+        exit 0
+    fi
+
+    # Load configuration
+    local config
+    config=$(load_config)
+
+    # Validate configuration
+    if ! validate_config "$config"; then
+        exit 1
+    fi
+
+    # Check if hook is globally enabled
+    if [ "$(get_config_value "$config" "enabled" "true")" = "false" ]; then
+        exit 0
+    fi
+
+    # Check if current repository is excluded
+    if [ "$(is_repo_excluded "$config")" = "true" ]; then
+        exit 0
+    fi
+
+    # Check if Claude Code CLI is available
+    if ! command -v claude &> /dev/null; then
+        log_warning "Claude Code CLI not found, skipping"
+        exit 0
+    fi
+
+    # Check if message generation is enabled
+    if [ "$(get_config_value "$config" "message_generation_enabled" "true")" = "false" ]; then
+        exit 0
+    fi
+
+    # Get staged diff
+    local diff
+    diff=$(git diff --cached --no-color)
+
+    # If no diff, skip
+    if [ -z "$diff" ]; then
+        exit 0
+    fi
+
+    # Filter diff to exclude ignored files
+    diff=$(filter_diff "$diff" "$config")
+
+    # If no relevant changes after filtering, skip
+    if [ -z "$diff" ]; then
+        exit 0
+    fi
+
+    # Check if we should skip based on existing commit message patterns
+    if [ -f "$COMMIT_MSG_FILE" ]; then
+        local existing_msg
+        existing_msg=$(cat "$COMMIT_MSG_FILE")
+
+        if [ "$(matches_skip_pattern "$existing_msg" "$config")" = "true" ]; then
+            exit 0
+        fi
+    fi
+
+    # Generate commit message
+    if ! generate_commit_message "$diff" "$config"; then
+        log_error "Failed to generate commit message - exiting with error"
+        exit 1
+    fi
+}
+
+# Run main function
+main "$@"

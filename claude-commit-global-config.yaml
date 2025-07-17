@@ -1,0 +1,134 @@
+enabled: true
+review_enabled: true
+message_generation_enabled: true
+max_subject_length: 50
+max_body_line_length: 72
+skip_patterns:
+  - "^WIP:"
+  - "^TEMP:"
+  - "^FIXUP:"
+  - "^SQUASH:"
+  - "^Merge branch"
+  - "^Merge pull request"
+file_ignore_patterns:
+  - "*.log"
+  - "*.tmp"
+  - "*.cache"
+  - "node_modules/"
+  - ".git/"
+  - "dist/"
+  - "build/"
+  - "coverage/"
+  - ".next/"
+  - ".nuxt/"
+  - "vendor/"
+  - "target/"
+  - "bin/"
+  - "obj/"
+excluded_repositories:
+  - "dotfiles"
+  - "temp-repo"
+  - "playground"
+commit_types:
+  - "feat"
+  - "fix"
+  - "docs"
+  - "style"
+  - "refactor"
+  - "test"
+  - "chore"
+  - "ci"
+  - "build"
+  - "perf"
+  - "revert"
+prompt_template: |
+  Please analyze the following git diff from the repository "{repo_name}" and generate a well-formatted commit message following these guidelines:
+
+  1. Use conventional commit format: SCOPE: description (scope should be capitalized, description start with uppercase)
+  2. Keep subject line under {max_subject_length} characters
+  3. Wrap body lines at {max_body_length} characters
+  4. PRIORITIZE critical changes that affect functionality, behavior, or architecture
+  5. Focus on WHY changes were made and their impact for code reviewers
+  6. Be concise and to the point - help reviewers understand quickly
+  7. Group related changes by importance and logical theme
+  8. Add authors and coauthors to the enfd of commit message
+
+  STRUCTURE:
+  - Start with the most important functional changes
+  - End with "Additional changes:" for minor/non-functional updates (if any)
+  - Skip obvious changes (formatting, imports) unless they're the main purpose
+
+  Common types: feat, fix, docs, style, refactor, test, chore, ci, build, perf, revert
+
+  Format your response like this:
+  ```
+  SCOPE: brief description focusing on main change
+
+  One line summary of the change
+
+  * Critical Changes:
+  - Most important functional/behavioral change and why it matters
+  - Second most important change (if applicable)
+
+  * Implementation Details(if needed):
+  - Key technical decisions or architectural changes
+
+  * Additional changes:
+  - Minor updates, formatting, documentation tweaks
+
+  * Breaking changes: (if any)
+
+  Authors and coauthors:
+    - Author 1
+    - Author 2
+    - ...
+  ```
+
+  IMPORTANT: If changes are minor (docs, formatting, simple refactoring), keep the message very short. For major changes, focus on the critical functionality impact first.
+
+  EXAMPLES OF GOOD COMMITS:
+
+  Feature addition:
+  ```
+  FEAT: Add OAuth2 authentication system
+
+  Implement secure user authentication with token management
+
+  * Critical Changes:
+  - Added JWT token validation and refresh mechanisms for secure auth
+  - Integrated OAuth2 flow with social login providers (Google, GitHub)
+
+  * Implementation Details:
+  - Created AuthService with token storage and validation logic
+  - Added middleware for route protection and user session management
+
+  Authors and coauthors:
+    - John Doe <john@example.com>
+  ```
+
+  Bug fix:
+  ```
+  FIX: Resolve memory leak in WebSocket connections
+
+  Prevent connection accumulation during rapid reconnects
+
+  * Critical Changes:
+  - Fixed WebSocket cleanup to properly close abandoned connections
+  - Added connection pooling with automatic timeout handling
+
+  Authors and coauthors:
+    - Jane Smith <jane@example.com>
+  ```
+
+  Simple refactor:
+  ```
+  REFACTOR: Extract user validation logic into separate service
+
+  Improve code organization and testability of auth module
+
+  Authors and coauthors:
+    - Bob Wilson <bob@example.com>
+  ```
+
+  Git diff:
+  {diff}
