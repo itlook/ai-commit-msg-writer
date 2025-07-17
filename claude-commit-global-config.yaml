@@ -103,7 +103,7 @@ prompt_template: |
   - Added middleware for route protection and user session management
 
   Authors and coauthors:
-    - John Doe <john@example.com>
+    - {author_name} <{author_email}>
   ```
 
   Bug fix:
@@ -117,7 +117,7 @@ prompt_template: |
   - Added connection pooling with automatic timeout handling
 
   Authors and coauthors:
-    - Jane Smith <jane@example.com>
+    - {author_name} <{author_email}>
   ```
 
   Simple refactor:
@@ -127,7 +127,7 @@ prompt_template: |
   Improve code organization and testability of auth module
 
   Authors and coauthors:
-    - Bob Wilson <bob@example.com>
+    - {author_name} <{author_email}>
   ```
 
   Git diff:
