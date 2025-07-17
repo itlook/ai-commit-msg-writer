@@ -197,6 +197,12 @@ generate_commit_message() {
     local repo_name
     repo_name=$(basename "$(git rev-parse --show-toplevel)" 2>/dev/null)
 
+    # Get git author information
+    local author_name
+    local author_email
+    author_name=$(git config user.name || echo "Unknown Author")
+    author_email=$(git config user.email || echo "unknown@example.com")
+
     # Get prompt template from config (already validated)
     local prompt_template
     prompt_template=$(echo "$config" | yq eval '.prompt_template' - 2>/dev/null)
@@ -207,6 +213,8 @@ generate_commit_message() {
     formatted_prompt="${formatted_prompt//\{repo_name\}/$repo_name}"
     formatted_prompt="${formatted_prompt//\{max_subject_length\}/$max_subject_length}"
     formatted_prompt="${formatted_prompt//\{max_body_length\}/$max_body_length}"
+    formatted_prompt="${formatted_prompt//\{author_name\}/$author_name}"
+    formatted_prompt="${formatted_prompt//\{author_email\}/$author_email}"
     formatted_prompt="${formatted_prompt//\{diff\}/$diff}"
 
     # Convert \n to actual newlines
