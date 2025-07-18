@@ -44,6 +44,9 @@ commit_types:
 prompt_template: |
   Please analyze the following git diff from the repository "{repo_name}" and generate a well-formatted commit message following these guidelines:
 
+  {project_context}CONTEXT: The above project information provides important context about the repository's purpose, architecture, and conventions.
+  Use this context to write more accurate and contextually appropriate commit messages.
+
   1. Use conventional commit format: SCOPE: description (scope should be capitalized, description start with uppercase)
   2. Keep subject line under {max_subject_length} characters
   3. Wrap body lines at {max_body_length} characters
