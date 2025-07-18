@@ -190,7 +190,7 @@ jobs:
         echo "=== Testing Configuration Scenarios ==="
 
         # Test disabling the hook
-        claude-git-hooks disable
+        ai-git-hooks disable
 
         # Create a test repo
         mkdir -p /tmp/test-disabled
@@ -214,7 +214,7 @@ jobs:
         fi
 
         # Re-enable the hook
-        claude-git-hooks enable
+        ai-git-hooks enable
         echo "✓ Hook re-enabled"
 
     - name: Test repository exclusion
@@ -233,7 +233,7 @@ jobs:
         repo_name=$(basename $(pwd))
 
         # Exclude this repository
-        claude-git-hooks exclude "$repo_name"
+        ai-git-hooks exclude "$repo_name"
 
         echo "test" > file.txt
         git add file.txt
@@ -243,7 +243,7 @@ jobs:
         $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook processed excluded repo"
 
         # Include it back
-        claude-git-hooks include "$repo_name"
+        ai-git-hooks include "$repo_name"
         echo "✓ Repository exclusion tested"
 
     - name: Test skip patterns
@@ -290,7 +290,7 @@ jobs:
         echo "=== Testing Management Script Commands ==="
 
         # Test status command
-        claude-git-hooks status
+        ai-git-hooks status
 
         # Test config command (just verify it doesn't crash)
         echo "✓ Status command works"
@@ -303,7 +303,7 @@ jobs:
         git config user.email "test@example.com"
 
         # Test the test command
-        claude-git-hooks test || echo "Test command completed"
+        ai-git-hooks test || echo "Test command completed"
 
         echo "✓ Management script commands tested"
 

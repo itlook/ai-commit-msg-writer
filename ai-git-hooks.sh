@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Claude Code CLI Global Hooks Management Script
+# AI Git Hooks Management Script
 
-GLOBAL_CONFIG="$HOME/.claude-commit-global-config.yaml"
+GLOBAL_CONFIG="$HOME/.ai-commit-global-config.yaml"
 HOOKS_DIR="$HOME/.git-hooks"
 
 # Colors
@@ -13,9 +13,9 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 usage() {
-    echo "Claude Code CLI Global Hooks Management"
+    echo "AI Git Hooks Management"
     echo ""
-    echo "Usage: claude-git-hooks [command] [options]"
+    echo "Usage: ai-git-hooks [command] [options]"
     echo ""
     echo "Commands:"
     echo "  status          Show current hook status"
@@ -28,13 +28,13 @@ usage() {
     echo "  reinstall       Reinstall global hooks"
     echo ""
     echo "Examples:"
-    echo "  claude-git-hooks status"
-    echo "  claude-git-hooks exclude my-repo"
-    echo "  claude-git-hooks config"
+    echo "  ai-git-hooks status"
+    echo "  ai-git-hooks exclude my-repo"
+    echo "  ai-git-hooks config"
 }
 
 status() {
-    echo -e "${BLUE}Claude Code CLI Global Hooks Status${NC}"
+    echo -e "${BLUE}AI Git Hooks Status${NC}"
     echo "=================================="
 
     if [ -f "$GLOBAL_CONFIG" ]; then
