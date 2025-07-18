@@ -12,7 +12,7 @@ Global Git hook that auto-generates conventional commit messages using Claude Co
 
 ## Prerequisites
 
-- [Claude Code CLI](https://docs.anthropic.com/claude/docs/claude-code) 
+- [Claude Code CLI](https://docs.anthropic.com/claude/docs/claude-code)
 - Git 2.0+
 - `yq` (YAML processor)
 
@@ -39,7 +39,7 @@ cp claude-commit-global-config.yaml ~/.claude-commit-global-config.yaml
 
 ## Configuration
 
-**Global**: `~/.claude-commit-global-config.yaml`  
+**Global**: `~/.claude-commit-global-config.yaml`
 **Per-repo**: `.claude-commit-config.yaml`
 
 Key settings:
@@ -48,6 +48,7 @@ Key settings:
 - `file_ignore_patterns`: Exclude file types
 - `max_subject_length`: Subject line limit (50)
 - `max_body_line_length`: Body wrap (72)
+- `prompt_template`: Customize the LLM prompt for message generation
 
 ## Usage
 
@@ -64,6 +65,37 @@ claude-git-hooks test       # Test in current repo
 claude-git-hooks config     # Edit configuration
 claude-git-hooks disable    # Disable globally
 ```
+
+## Customizing Commit Message Generation
+
+You can customize the prompt used to generate commit messages by editing the `prompt_template` in your configuration file:
+
+```yaml
+# ~/.claude-commit-global-config.yaml
+prompt_template: |
+  Generate a conventional commit message for the git repository "{repo_name}".
+
+  Subject line requirements:
+  - Maximum {max_subject_length} characters
+  - Format: type(scope): description
+  - Use conventional commit types: feat, fix, docs, style, refactor, test, chore
+
+  Body requirements:
+  - Wrap lines at {max_body_length} characters
+  - Explain the what and why of changes
+  - Group related changes by topic/theme, not by file
+
+  Here's the diff:
+  {diff}
+
+  Generate only the commit message without any additional text.
+```
+
+The template supports these variables:
+- `{repo_name}`: Current repository name
+- `{max_subject_length}`: Subject line character limit
+- `{max_body_length}`: Body line wrap length
+- `{diff}`: The git diff content
 
 ## Troubleshooting
 
