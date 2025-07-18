@@ -180,10 +180,17 @@ filter_diff() {
 
     # Filter out ignored files
     echo "$diff" | awk -v patterns_file="$temp_patterns" '
+    function glob_to_regex(glob,    regex) {
+        regex = glob
+        gsub(/\./, "\\.", regex)
+        gsub(/\*/, ".*", regex)
+        gsub(/\?/, ".", regex)
+        return "^" regex "$"
+    }
     BEGIN {
         while ((getline pattern < patterns_file) > 0) {
             if (pattern != "") {
-                ignore_list[++ignore_count] = pattern
+                ignore_list[++ignore_count] = glob_to_regex(pattern)
             }
         }
         close(patterns_file)
