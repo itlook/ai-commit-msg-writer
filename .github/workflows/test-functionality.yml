@@ -10,7 +10,11 @@ on:
 jobs:
   test-functionality:
     name: Test Full Hook Functionality
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
 
     steps:
     - name: Checkout code
@@ -23,9 +27,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y git snapd
-        sudo snap install yq
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          sudo apt update
+          sudo apt install -y git snapd
+          sudo snap install yq
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          brew install yq
+        fi
 
     - name: Install Claude CLI
       run: |
@@ -43,6 +51,7 @@ jobs:
 
     - name: Test commit message generation scenarios
       run: |
+        set -e  # Exit on any error
 
         # Create test repositories for different scenarios
 
@@ -82,11 +91,17 @@ jobs:
         # Test the hook
         echo "Testing hook with authentication feature..."
         echo "" > .git/COMMIT_EDITMSG
-        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook completed for auth feature"
+        if ! $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG; then
+          echo "❌ Hook failed for auth feature"
+          exit 1
+        fi
 
         if [ -s .git/COMMIT_EDITMSG ]; then
           echo "✓ Hook generated commit message:"
           cat .git/COMMIT_EDITMSG
+        else
+          echo "❌ Hook did not generate commit message"
+          exit 1
         fi
 
         # Scenario 2: Bug fix
@@ -126,11 +141,17 @@ jobs:
         # Test the hook
         echo "Testing hook with bug fix..."
         echo "" > .git/COMMIT_EDITMSG
-        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook completed for bug fix"
+        if ! $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG; then
+          echo "❌ Hook failed for bug fix"
+          exit 1
+        fi
 
         if [ -s .git/COMMIT_EDITMSG ]; then
           echo "✓ Hook generated commit message:"
           cat .git/COMMIT_EDITMSG
+        else
+          echo "❌ Hook did not generate commit message"
+          exit 1
         fi
 
         # Scenario 3: Refactoring
@@ -177,15 +198,22 @@ jobs:
         # Test the hook
         echo "Testing hook with refactoring..."
         echo "" > .git/COMMIT_EDITMSG
-        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook completed for refactoring"
+        if ! $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG; then
+          echo "❌ Hook failed for refactoring"
+          exit 1
+        fi
 
         if [ -s .git/COMMIT_EDITMSG ]; then
           echo "✓ Hook generated commit message:"
           cat .git/COMMIT_EDITMSG
+        else
+          echo "❌ Hook did not generate commit message"
+          exit 1
         fi
 
     - name: Test configuration scenarios
       run: |
+        set -e  # Exit on any error
 
         echo "=== Testing Configuration Scenarios ==="
 
@@ -204,13 +232,14 @@ jobs:
 
         # Test that hook is disabled
         echo "Original message" > .git/COMMIT_EDITMSG
-        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook ran while disabled"
+        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG
 
         content=$(cat .git/COMMIT_EDITMSG)
         if [ "$content" = "Original message" ]; then
           echo "✓ Hook correctly disabled"
         else
-          echo "⚠ Hook may have run while disabled"
+          echo "❌ Hook ran while disabled"
+          exit 1
         fi
 
         # Re-enable the hook
@@ -219,6 +248,7 @@ jobs:
 
     - name: Test repository exclusion
       run: |
+        set -e  # Exit on any error
 
         echo "=== Testing Repository Exclusion ==="
 
@@ -240,7 +270,15 @@ jobs:
 
         # Test that hook skips this repo
         echo "Original message" > .git/COMMIT_EDITMSG
-        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook processed excluded repo"
+        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG
+
+        content=$(cat .git/COMMIT_EDITMSG)
+        if [ "$content" = "Original message" ]; then
+          echo "✓ Hook correctly skipped excluded repository"
+        else
+          echo "❌ Hook processed excluded repository"
+          exit 1
+        fi
 
         # Include it back
         claude-git-hooks include "$repo_name"
@@ -248,6 +286,7 @@ jobs:
 
     - name: Test skip patterns
       run: |
+        set -e  # Exit on any error
 
         echo "=== Testing Skip Patterns ==="
 
@@ -263,29 +302,32 @@ jobs:
         # Test WIP pattern
         echo "WIP: work in progress" > .git/COMMIT_EDITMSG
         original_content=$(cat .git/COMMIT_EDITMSG)
-        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook processed WIP"
+        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG
         new_content=$(cat .git/COMMIT_EDITMSG)
 
         if [ "$original_content" = "$new_content" ]; then
           echo "✓ WIP pattern correctly skipped"
         else
-          echo "⚠ WIP pattern may not have been skipped"
+          echo "❌ WIP pattern was not skipped"
+          exit 1
         fi
 
         # Test TEMP pattern
         echo "TEMP: temporary commit" > .git/COMMIT_EDITMSG
         original_content=$(cat .git/COMMIT_EDITMSG)
-        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Hook processed TEMP"
+        $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG
         new_content=$(cat .git/COMMIT_EDITMSG)
 
         if [ "$original_content" = "$new_content" ]; then
           echo "✓ TEMP pattern correctly skipped"
         else
-          echo "⚠ TEMP pattern may not have been skipped"
+          echo "❌ TEMP pattern was not skipped"
+          exit 1
         fi
 
     - name: Test management script commands
       run: |
+        set -e  # Exit on any error
 
         echo "=== Testing Management Script Commands ==="
 
@@ -303,7 +345,7 @@ jobs:
         git config user.email "test@example.com"
 
         # Test the test command
-        claude-git-hooks test || echo "Test command completed"
+        claude-git-hooks test
 
         echo "✓ Management script commands tested"
 
