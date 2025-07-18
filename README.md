@@ -1,10 +1,10 @@
-# Claude Git Hooks
+# AI Git Hooks
 
-Global Git hook that auto-generates conventional commit messages using Claude Code CLI.
+Global Git hook that auto-generates conventional commit messages using AI CLI tools.
 
 ## Features
 
-- Automatic commit message generation with Claude Code CLI
+- Automatic commit message generation with AI CLI tools
 - Conventional commit format (feat, fix, docs, etc.)
 - Global installation for all repositories
 - Configurable filtering and exclusions
@@ -12,7 +12,7 @@ Global Git hook that auto-generates conventional commit messages using Claude Co
 
 ## Prerequisites
 
-- [Claude Code CLI](https://docs.anthropic.com/claude/docs/claude-code)
+- AI CLI tool (e.g., [Claude Code CLI](https://docs.anthropic.com/claude/docs/claude-code))
 - Git 2.0+
 - `yq` (YAML processor)
 
@@ -34,13 +34,13 @@ chmod +x ~/.git-hooks/prepare-commit-msg
 git config --global core.hooksPath ~/.git-hooks
 
 # 3. Copy global config (optional)
-cp claude-commit-global-config.yaml ~/.claude-commit-global-config.yaml
+cp ai-commit-global-config.yaml ~/.ai-commit-global-config.yaml
 ```
 
 ## Configuration
 
-**Global**: `~/.claude-commit-global-config.yaml`
-**Per-repo**: `.claude-commit-config.yaml`
+**Global**: `~/.ai-commit-global-config.yaml`
+**Per-repo**: `.ai-commit-config.yaml`
 
 Key settings:
 - `enabled`: Enable/disable globally
@@ -60,10 +60,10 @@ git commit  # Hook auto-generates commit message
 ## Management
 
 ```bash
-claude-git-hooks status     # Check status
-claude-git-hooks test       # Test in current repo
-claude-git-hooks config     # Edit configuration
-claude-git-hooks disable    # Disable globally
+ai-git-hooks status     # Check status
+ai-git-hooks test       # Test in current repo
+ai-git-hooks config     # Edit configuration
+ai-git-hooks disable    # Disable globally
 ```
 
 ## Customizing Commit Message Generation
@@ -71,7 +71,7 @@ claude-git-hooks disable    # Disable globally
 You can customize the prompt used to generate commit messages by editing the `prompt_template` in your configuration file:
 
 ```yaml
-# ~/.claude-commit-global-config.yaml
+# ~/.ai-commit-global-config.yaml
 prompt_template: |
   Generate a conventional commit message for the git repository "{repo_name}".
 
@@ -101,7 +101,7 @@ The template supports these variables:
 
 **Hook not running?**
 ```bash
-which claude                              # Check Claude CLI
+which claude                              # Check AI CLI
 git config --global core.hooksPath       # Verify hooks path
 ```
 
@@ -112,7 +112,7 @@ git commit --no-verify
 
 **Disable temporarily:**
 ```yaml
-# In ~/.claude-commit-global-config.yaml
+# In ~/.ai-commit-global-config.yaml
 enabled: false
 ```
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Claude Git Hooks Installation Script
+# AI Git Hooks Installation Script
 # Compatible with macOS, Ubuntu, CentOS, and other Unix-like systems
 
 set -e
@@ -14,8 +14,8 @@ NC='\033[0m'
 
 # Installation settings
 HOOKS_DIR="$HOME/.git-hooks"
-GLOBAL_CONFIG="$HOME/.claude-commit-global-config.yaml"
-MANAGEMENT_SCRIPT="$HOME/.local/bin/claude-git-hooks"
+GLOBAL_CONFIG="$HOME/.ai-commit-global-config.yaml"
+MANAGEMENT_SCRIPT="$HOME/.local/bin/ai-git-hooks"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Command line options
@@ -31,7 +31,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h|--help)
-            echo "Claude Git Hooks Installation Script"
+            echo "AI Git Hooks Installation Script"
             echo ""
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help   Show this help message"
             echo ""
             echo "This script will:"
-            echo "  1. Verify required dependencies (yq, git, claude)"
+            echo "  1. Verify required dependencies (yq, git, ai cli)"
             echo "  2. Set up global git hooks directory"
             echo "  3. Install the prepare-commit-msg hook"
             echo "  4. Install global configuration file"
@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
             echo "Prerequisites:"
             echo "  - yq (YAML processor) must be installed"
             echo "  - git must be installed"
-            echo "  - claude CLI must be installed and configured"
+            echo "  - AI CLI must be installed and configured"
             exit 0
             ;;
         *)
@@ -148,12 +148,12 @@ check_dependencies() {
         log_success "Git is available"
     fi
 
-    # Check if Claude CLI is installed
+    # Check if AI CLI is available
     if ! command_exists claude; then
-        log_error "Claude CLI is not installed"
+        log_error "AI CLI is not installed"
         missing_deps+=("claude")
     else
-        log_success "Claude CLI is available"
+        log_success "AI CLI is available"
     fi
 
     # If any dependencies are missing, show installation instructions and exit
@@ -246,7 +246,7 @@ install_hook() {
 # Install global configuration
 install_config() {
     if ask_permission "Install global configuration to $GLOBAL_CONFIG?"; then
-        if [ -f "$SCRIPT_DIR/claude-commit-global-config.yaml" ]; then
+        if [ -f "$SCRIPT_DIR/ai-commit-global-config.yaml" ]; then
             if [ -f "$GLOBAL_CONFIG" ]; then
                 if ask_permission "Configuration file already exists. Backup and replace?"; then
                     log_info "Backing up existing configuration..."
@@ -255,10 +255,10 @@ install_config() {
                 fi
             fi
             log_info "Installing global configuration..."
-            cp "$SCRIPT_DIR/claude-commit-global-config.yaml" "$GLOBAL_CONFIG" && \
+            cp "$SCRIPT_DIR/ai-commit-global-config.yaml" "$GLOBAL_CONFIG" && \
             track_change "Installed global configuration" || track_failure "Failed to install global configuration"
         else
-            log_error "claude-commit-global-config.yaml file not found in $SCRIPT_DIR"
+            log_error "ai-commit-global-config.yaml file not found in $SCRIPT_DIR"
             track_failure "Configuration source file not found"
         fi
     else
@@ -272,12 +272,12 @@ install_management_script() {
     local bin_dir="$HOME/.local/bin"
 
     if ask_permission "Install management script to $MANAGEMENT_SCRIPT?"; then
-        if [ -f "$SCRIPT_DIR/claude-git-hooks.sh" ]; then
+        if [ -f "$SCRIPT_DIR/ai-git-hooks.sh" ]; then
             log_info "Creating bin directory if needed..."
             mkdir -p "$bin_dir"
 
             log_info "Installing management script..."
-            cp "$SCRIPT_DIR/claude-git-hooks.sh" "$MANAGEMENT_SCRIPT" && \
+            cp "$SCRIPT_DIR/ai-git-hooks.sh" "$MANAGEMENT_SCRIPT" && \
             chmod +x "$MANAGEMENT_SCRIPT" && \
             track_change "Installed management script to $MANAGEMENT_SCRIPT" || track_failure "Failed to install management script"
 
@@ -289,7 +289,7 @@ install_management_script() {
                 track_change "Note: Added PATH instruction for ~/.local/bin"
             fi
         else
-            log_error "claude-git-hooks.sh file not found in $SCRIPT_DIR"
+            log_error "ai-git-hooks.sh file not found in $SCRIPT_DIR"
             track_failure "Management script source file not found"
         fi
     else
@@ -351,10 +351,10 @@ print_summary() {
         echo "  4. The hook will automatically generate a commit message"
         echo ""
         echo "Management commands:"
-        echo "  claude-git-hooks status    # Check hook status"
-        echo "  claude-git-hooks config    # Edit configuration"
-        echo "  claude-git-hooks test      # Test in current repo"
-        echo "  claude-git-hooks --help    # See all commands"
+        echo "  ai-git-hooks status    # Check hook status"
+        echo "  ai-git-hooks config    # Edit configuration"
+        echo "  ai-git-hooks test      # Test in current repo"
+        echo "  ai-git-hooks --help    # See all commands"
     else
         echo -e "${YELLOW}⚠️  Installation completed with issues${NC}"
         echo ""
@@ -373,7 +373,7 @@ print_summary() {
 
 # Main installation flow
 main() {
-    echo -e "${BLUE}Claude Git Hooks Installation${NC}"
+    echo -e "${BLUE}AI Git Hooks Installation${NC}"
     echo "=================================="
     echo ""
 
@@ -383,7 +383,7 @@ main() {
 
     # Check if we're in the right directory
     if [ ! -f "$SCRIPT_DIR/prepare-commit-msg" ]; then
-        log_error "Installation files not found. Please run this script from the claude-git-hooks directory."
+        log_error "Installation files not found. Please run this script from the ai-git-hooks directory."
         exit 1
     fi
 
