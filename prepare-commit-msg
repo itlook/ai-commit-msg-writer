@@ -318,7 +318,11 @@ generate_commit_message() {
     # Convert \n to actual newlines
     echo -e "$formatted_prompt" > "$temp_prompt"
 
-    log_info "Generating commit message with AI CLI tool..."
+    if [ "$COMMIT_SOURCE" = "squash" ]; then
+        log_info "Generating combined commit message for squashed commits with AI CLI tool..."
+    else
+        log_info "Generating commit message with AI CLI tool..."
+    fi
 
     local ai_response
     ai_response=$(cat "$temp_prompt" | claude 2>&1)
@@ -385,8 +389,8 @@ main() {
         exit 0
     fi
 
-    # Only run for regular commits and templates
-    if [ "$COMMIT_SOURCE" != "" ] && [ "$COMMIT_SOURCE" != "template" ]; then
+    # Run for regular commits, templates, and squash commits
+    if [ "$COMMIT_SOURCE" != "" ] && [ "$COMMIT_SOURCE" != "template" ] && [ "$COMMIT_SOURCE" != "squash" ]; then
         exit 0
     fi
 
@@ -426,9 +430,16 @@ main() {
         exit 0
     fi
 
-    # Get staged diff
+    # Get diff based on commit source
     local diff
-    diff=$(git diff --cached --no-color)
+    if [ "$COMMIT_SOURCE" = "squash" ]; then
+        # For squash commits, get the combined diff from the base commit
+        # This shows all changes that will be included in the squashed commit
+        diff=$(git diff HEAD --no-color)
+    else
+        # For regular commits, get staged diff
+        diff=$(git diff --cached --no-color)
+    fi
 
     # If no diff, skip
     if [ -z "$diff" ]; then
