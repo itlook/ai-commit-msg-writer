@@ -78,6 +78,12 @@ NOAI=1 git commit                  # Skip AI with environment variable
 git commit --no-verify             # Skip all hooks
 ```
 
+**Special Git Operations:**
+- **Cherry-pick commits**: Preserves original commit messages (AI skipped)
+- **Squash commits**: Generates new AI message combining all squashed changes
+- **Merge commits**: Uses Git's default merge message (AI skipped)
+- **Rebase operations**: Preserves existing commit messages (AI skipped)
+
 ## ⚙️ Configuration
 
 **Global config:** `~/.ai-commit-global-config.yaml`
@@ -126,6 +132,12 @@ git commit -m "message"    # Use your own message
 NOAI=1 git commit         # Skip AI completely
 git commit --no-verify    # Skip all git hooks
 ```
+
+**Git operation behavior:**
+- Regular commits: AI generates messages
+- Cherry-pick: Preserves original messages
+- Squash: AI generates combined messages
+- Merge/rebase: Uses Git defaults
 
 **Configuration issues:**
 - Global config: `~/.ai-commit-global-config.yaml`
