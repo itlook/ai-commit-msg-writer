@@ -48,108 +48,55 @@ commit_types:
   - "perf"
   - "revert"
 prompt_template: |
-  Generate a commit message for repository "{repo_name}" that PRIORITIZES WHY over WHAT.
+  Generate a commit message for repository "{repo_name}" focusing on WHY over WHAT.
 
-  {project_context}REPOSITORY CONTEXT: Use the above information to understand the project's purpose and write contextually appropriate commit messages.
+  {project_context}{why_context}
 
-  {why_context}
+  REQUIREMENTS:
+  - Subject: TYPE: Brief WHY-focused description ({max_subject_length} chars max)
+  - Body: Brief motivation + bullet list of major changes only
+  - Group related minor changes, omit irrelevant details
+  - Use conventional commit types
 
-  CRITICAL PRINCIPLE: The commit message should answer WHY this change was made FIRST, then briefly explain what changed to support that why.
-
-  PRIORITIZATION ORDER:
-  1. User-provided WHY context (highest priority - drives title and summary)
-  2. Business/functional reason for the change
-  3. Impact on users, developers, or system behavior
-  4. Technical implementation details (lowest priority)
-
-  FORMATTING GUIDELINES:
-  - Subject line format: TYPE: WHY-focused description (under {max_subject_length} chars)
-  - Subject should capture the REASON/PURPOSE, not just the technical change
-  - Body lines wrapped at {max_body_length} characters
-  - Focus on motivation, impact, and reasoning rather than code changes
-
-  COMMIT STRUCTURE:
+  STRUCTURE:
   ```
   TYPE: Why this change was needed/what problem it solves
 
-  Brief summary explaining the motivation and impact
+  Brief explanation of the motivation and impact.
 
-  * Why this change was made:
-  - Primary reason/problem being solved (based on user context)
-  - Business/user impact or benefit
-  - Consequences of not making this change
-
-  * What changed to achieve this:
-  - Key functional/behavioral changes that support the why
-  - Technical decisions that directly relate to solving the problem
-
-  * Implementation notes (only if relevant):
-  - Architecture/design decisions
-  - Non-obvious technical choices
+  * Major change 1 (group related items)
+  * Major change 2
+  * Major change 3 (omit trivial formatting/refactoring)
 
   Authors and coauthors:
     - {author_name} <{author_email}>
   ```
 
-  EXAMPLES - Notice how WHY leads:
-
-  Problem-focused feature:
+  EXAMPLES:
   ```
   FEAT: Enable secure user sessions to prevent unauthorized access
 
-  Implement authentication system to protect sensitive user data
+  Users need protection from session hijacking vulnerabilities.
 
-  * Why this change was made:
-  - Users reported security concerns about unprotected endpoints
-  - Compliance requirements mandate authenticated access
-  - Current system vulnerable to session hijacking
-
-  * What changed to achieve this:
-  - Added JWT-based authentication with token validation
-  - Integrated OAuth2 flow for social login providers
-  - Protected routes with authentication middleware
+  * Add JWT authentication with token validation
+  * Integrate OAuth2 flow for social login providers
+  * Protect routes with authentication middleware
 
   Authors and coauthors:
     - {author_name} <{author_email}>
   ```
 
-  Performance-focused fix:
   ```
   FIX: Eliminate memory leak to prevent application crashes
 
-  Resolve WebSocket connection buildup causing production outages
+  Production servers were crashing due to unbounded memory growth.
 
-  * Why this change was made:
-  - Production servers crashing due to memory exhaustion
-  - Users experiencing frequent disconnections
-  - Memory usage growing unbounded during high traffic
-
-  * What changed to achieve this:
-  - Fixed WebSocket cleanup to properly close abandoned connections
-  - Added connection pooling with automatic timeout handling
+  * Fix WebSocket cleanup to properly close abandoned connections
+  * Add connection pooling with automatic timeout handling
 
   Authors and coauthors:
     - {author_name} <{author_email}>
   ```
 
-  Maintainability-focused refactor:
-  ```
-  REFACTOR: Improve code maintainability for faster feature development
-
-  Extract validation logic to reduce duplication and testing complexity
-
-  * Why this change was made:
-  - Team spending too much time debugging validation issues
-  - Duplicate validation logic causing inconsistent behavior
-  - New features blocked by complex validation integration
-
-  * What changed to achieve this:
-  - Consolidated user validation into dedicated service
-  - Standardized validation error handling across modules
-
-  Authors and coauthors:
-    - {author_name} <{author_email}>
-  ```
-
-  Git diff (for technical context only):
+  Git diff:
   {diff}
