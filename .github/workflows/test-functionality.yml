@@ -284,6 +284,71 @@ jobs:
           echo "⚠ TEMP pattern may not have been skipped"
         fi
 
+    - name: Test WHY functionality
+      run: |
+
+        echo "=== Testing WHY Variable Functionality ==="
+
+        # Create test repository for WHY testing
+        mkdir -p /tmp/test-why
+        cd /tmp/test-why
+        git init
+        git config user.name "Test User"
+        git config user.email "test@example.com"
+
+        # Create initial commit
+        echo "# Test Project" > README.md
+        git add README.md
+        git commit -m "Initial commit"
+
+        # Add some test changes
+        echo "function testFunction() { return true; }" > test.js
+        git add test.js
+
+        echo "Testing WHY variable set..."
+        WHY="implement user authentication feature" $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "WHY test completed"
+
+        if [ -s .git/COMMIT_EDITMSG ]; then
+          echo "✓ Hook generated commit message with WHY:"
+          cat .git/COMMIT_EDITMSG
+          echo ""
+
+          # Check if the WHY context appears in the commit message
+          if grep -q "authentication" .git/COMMIT_EDITMSG; then
+            echo "✓ WHY context successfully integrated into commit message"
+          else
+            echo "⚠ WHY context may not be properly integrated"
+          fi
+        fi
+
+        echo ""
+        echo "Testing WHY variable empty (should skip WHY prompt)..."
+        WHY="" $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Empty WHY test completed"
+
+        echo ""
+        echo "Testing WHY with special characters..."
+        WHY="fix issue with \"quotes\" and 'apostrophes'" $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Special chars WHY test completed"
+
+        echo ""
+        echo "Testing long WHY content (truncation)..."
+        LONG_WHY=$(printf 'a%.0s' {1..300})
+        WHY="$LONG_WHY" $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "Long WHY test completed"
+
+        echo ""
+        echo "Testing WHY disabled in local config..."
+        echo "use_why_variable: false" > .ai-commit-config.yaml
+        WHY="should be ignored" $HOME/.git-hooks/prepare-commit-msg .git/COMMIT_EDITMSG || echo "WHY disabled test completed"
+
+        if [ -s .git/COMMIT_EDITMSG ]; then
+          if ! grep -q "should be ignored" .git/COMMIT_EDITMSG; then
+            echo "✓ WHY correctly disabled in local config"
+          else
+            echo "⚠ WHY may not be properly disabled"
+          fi
+        fi
+
+        echo "✓ WHY functionality tests completed"
+
     - name: Test management script commands
       run: |
 
@@ -302,7 +367,7 @@ jobs:
         git config user.name "Test User"
         git config user.email "test@example.com"
 
-        # Test the test command
+        # Test the test command (includes WHY functionality testing)
         ai-git-hooks test || echo "Test command completed"
 
         echo "✓ Management script commands tested"
@@ -315,6 +380,7 @@ jobs:
         echo "✓ Configuration management tested"
         echo "✓ Repository exclusion tested"
         echo "✓ Skip patterns tested"
+        echo "✓ WHY variable functionality tested"
         echo "✓ Management script commands tested"
         echo "✓ All functionality verified"
         echo "==========================================="

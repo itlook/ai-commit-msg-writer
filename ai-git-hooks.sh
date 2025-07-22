@@ -155,6 +155,51 @@ test_hooks() {
             echo -e "${GREEN}✓ Repository is included in hooks${NC}"
         fi
     fi
+
+    # Test WHY functionality
+    test_why_functionality
+}
+
+test_why_functionality() {
+    echo ""
+    echo -e "${BLUE}Testing WHY variable support...${NC}"
+
+    # Check if WHY is enabled in config
+    if [ -f "$GLOBAL_CONFIG" ]; then
+        local use_why_variable
+        local prompt_for_why
+        use_why_variable=$(cat "$GLOBAL_CONFIG" | yq eval '.use_why_variable // true' 2>/dev/null)
+        prompt_for_why=$(cat "$GLOBAL_CONFIG" | yq eval '.prompt_for_why // true' 2>/dev/null)
+
+        echo "WHY variable enabled: $use_why_variable"
+        echo "Interactive prompt enabled: $prompt_for_why"
+
+        # Test WHY variable detection
+        if [ "$use_why_variable" = "true" ]; then
+            echo -e "${GREEN}✓ WHY functionality is enabled${NC}"
+
+            # Test with WHY environment variable set
+            echo -e "${BLUE}Testing WHY variable set...${NC}"
+            if [ -n "$WHY" ]; then
+                echo -e "${GREEN}✓ WHY variable is currently set: '$WHY'${NC}"
+            else
+                echo -e "${YELLOW}⚠ WHY variable not set (this is normal)${NC}"
+            fi
+
+            # Test prompt template has WHY placeholder
+            local has_why_placeholder
+            has_why_placeholder=$(cat "$GLOBAL_CONFIG" | yq eval '.prompt_template | contains("{why_context}")' 2>/dev/null)
+            if [ "$has_why_placeholder" = "true" ]; then
+                echo -e "${GREEN}✓ Prompt template contains {why_context} placeholder${NC}"
+            else
+                echo -e "${RED}✗ Prompt template missing {why_context} placeholder${NC}"
+            fi
+        else
+            echo -e "${YELLOW}⚠ WHY functionality is disabled${NC}"
+        fi
+    else
+        echo -e "${RED}✗ Configuration file not found${NC}"
+    fi
 }
 
 reinstall_hooks() {

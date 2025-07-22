@@ -117,14 +117,14 @@ The `claude-git-hooks.sh` script provides:
 
 ### Key Functions in prepare-commit-msg:
 - `load_config()`: Merges global and local YAML configs using yq
-- `filter_diff()`: Excludes ignored files based on patterns 
+- `filter_diff()`: Excludes ignored files based on patterns
 - `generate_commit_message()`: Calls Claude CLI with template substitution
 - `matches_skip_pattern()`: Checks commit message skip patterns
 
 ### Prompt Template Variables
 The prompt template supports these substitutions:
 - `{repo_name}`: Current repository name
-- `{max_subject_length}`: Subject line character limit  
+- `{max_subject_length}`: Subject line character limit
 - `{max_body_length}`: Body line wrap length
 - `{diff}`: Filtered git diff content
 
@@ -137,3 +137,9 @@ The prompt template supports these substitutions:
 ## Security Considerations
 
 The hook processes git diff output and sends it to Claude Code CLI. It filters out sensitive file patterns and respects git's ignore patterns. No credentials or sensitive data should be included in commit analysis.
+
+## Code Quality Guidelines
+
+When working on files in this repository:
+- NEVER leave trailing spaces at the end of lines in any files
+- Maintain consistent formatting throughout the codebase

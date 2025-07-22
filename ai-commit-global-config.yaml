@@ -1,6 +1,12 @@
 enabled: true
 review_enabled: true
 message_generation_enabled: true
+# WHY Environment Variable Support
+# Enable WHY variable to provide context about the reason for changes
+# Usage: WHY="fix critical memory leak" git commit
+use_why_variable: true
+# Prompt interactively for WHY when not set (can be disabled by setting WHY="" or use_why_variable: false)
+prompt_for_why: true
 max_subject_length: 50
 max_body_line_length: 72
 skip_patterns:
@@ -46,6 +52,8 @@ prompt_template: |
 
   {project_context}CONTEXT: The above project information provides important context about the repository's purpose, architecture, and conventions.
   Use this context to write more accurate and contextually appropriate commit messages.
+
+  {why_context}
 
   1. Use conventional commit format: SCOPE: description (scope should be capitalized, description start with uppercase)
   2. Keep subject line under {max_subject_length} characters
