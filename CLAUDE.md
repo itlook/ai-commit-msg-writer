@@ -9,8 +9,8 @@ This repository contains a global Git prepare-commit-msg hook that automates com
 ## Key Files and Architecture
 
 - `prepare-commit-msg`: The main Git hook script that generates commit messages
-- `claude-git-hooks.sh`: Management script for hook administration - enable/disable, configuration, testing
-- `claude-commit-global-config.yaml`: Default global configuration with sensible defaults and prompt template
+- `ai-git-hooks.sh`: Management script for hook administration - enable/disable, configuration, testing
+- `ai-commit-global-config.yaml`: Default global configuration with sensible defaults and prompt template
 - `install.sh`: Cross-platform installation script with dependency checking and error handling
 - `README.md`: Project documentation and installation instructions
 
@@ -18,8 +18,8 @@ This repository contains a global Git prepare-commit-msg hook that automates com
 
 Test the hook functionality:
 ```bash
-./claude-git-hooks.sh test      # Test hook in current repository
-./claude-git-hooks.sh status    # Show current configuration and status
+./ai-git-hooks.sh test      # Test hook in current repository
+./ai-git-hooks.sh status    # Show current configuration and status
 ```
 
 Installation and setup:
@@ -30,11 +30,11 @@ Installation and setup:
 
 Management operations:
 ```bash
-./claude-git-hooks.sh enable   # Enable hooks globally
-./claude-git-hooks.sh disable  # Disable hooks globally
-./claude-git-hooks.sh config   # Edit global configuration
-./claude-git-hooks.sh exclude [repo]  # Exclude specific repository
-./claude-git-hooks.sh include [repo]  # Include specific repository
+./ai-git-hooks.sh enable   # Enable hooks globally
+./ai-git-hooks.sh disable  # Disable hooks globally
+./ai-git-hooks.sh config   # Edit global configuration
+./ai-git-hooks.sh exclude [repo]  # Exclude specific repository
+./ai-git-hooks.sh include [repo]  # Include specific repository
 ```
 
 ## Hook Architecture
@@ -42,8 +42,8 @@ Management operations:
 The `prepare-commit-msg` hook is a comprehensive bash script that:
 
 1. **Configuration System**: Hierarchical configuration loading (global → local override)
-   - Global: `~/.claude-commit-global-config.yaml`
-   - Local: `.claude-commit-config.yaml` (per-repository)
+   - Global: `~/.ai-commit-global-config.yaml`
+   - Local: `.ai-commit-config.yaml` (per-repository)
    - Uses `yq` for YAML parsing and manipulation
 
 2. **Repository Filtering**: Multi-level filtering system
@@ -56,13 +56,18 @@ The `prepare-commit-msg` hook is a comprehensive bash script that:
    - Provides only relevant diff content to Claude
    - Handles empty diffs gracefully
 
-4. **Claude Integration**: Configurable prompt generation
+4. **Context Management**: Selective project context injection
+   - Includes README.md content for repository context (if present)
+   - Excludes CLAUDE.md content to reduce token usage and improve performance
+   - Only injects relevant context for commit message generation
+
+5. **Claude Integration**: Configurable prompt generation
    - Uses customizable prompt template from configuration
    - Supports variable substitution: `{repo_name}`, `{max_subject_length}`, `{max_body_length}`, `{diff}`
    - Enforces grouping by topic/theme rather than file-by-file changes
    - Includes repository context and formatting requirements
 
-5. **Message Formatting**: Conventional commit compliance
+6. **Message Formatting**: Conventional commit compliance
    - Configurable subject line length (default: 50 chars)
    - Body line wrapping (default: 72 chars)
    - Extracts structured output from Claude responses
@@ -84,7 +89,7 @@ The hook supports comprehensive YAML configuration with hierarchical loading:
 - `file_ignore_patterns`: File patterns to exclude from diff analysis
 
 ### Management Commands
-The `claude-git-hooks.sh` script provides:
+The `ai-git-hooks.sh` script provides:
 - `status`: Show current configuration and hook status
 - `enable/disable`: Toggle hooks globally
 - `exclude/include [repo]`: Manage repository exclusions
@@ -110,14 +115,15 @@ The `claude-git-hooks.sh` script provides:
 ## Important Implementation Details
 
 ### Configuration File Locations
-- Global config: `~/.claude-commit-global-config.yaml`
-- Local override: `.claude-commit-config.yaml` (per-repository)
+- Global config: `~/.ai-commit-global-config.yaml`
+- Local override: `.ai-commit-config.yaml` (per-repository)
 - Global hooks directory: `~/.git-hooks/`
-- Management script: `~/.local/bin/claude-git-hooks`
+- Management script: `~/.local/bin/ai-git-hooks`
 
 ### Key Functions in prepare-commit-msg:
 - `load_config()`: Merges global and local YAML configs using yq
 - `filter_diff()`: Excludes ignored files based on patterns
+- `collect_project_context()`: Gathers README.md content for context (excludes CLAUDE.md)
 - `generate_commit_message()`: Calls Claude CLI with template substitution
 - `matches_skip_pattern()`: Checks commit message skip patterns
 

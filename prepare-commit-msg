@@ -203,14 +203,6 @@ collect_project_context() {
         fi
     fi
 
-    # Check for CLAUDE.md
-    if [ -f "CLAUDE.md" ]; then
-        local claude_content
-        claude_content=$(head -n 100 "CLAUDE.md" 2>/dev/null | sed 's/^/# /')
-        if [ -n "$claude_content" ]; then
-            context="${context}PROJECT INSTRUCTIONS:\n${claude_content}\n\n"
-        fi
-    fi
 
     echo "$context"
 }
