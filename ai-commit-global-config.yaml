@@ -48,82 +48,83 @@ commit_types:
   - "perf"
   - "revert"
 prompt_template: |
-  Please analyze the following git diff from the repository "{repo_name}" and generate a well-formatted commit message following these guidelines:
+  Generate a commit message for repository "{repo_name}" that PRIORITIZES WHY over WHAT.
 
-  {project_context}CONTEXT: The above project information provides important context about the repository's purpose, architecture, and conventions.
-  Use this context to write more accurate and contextually appropriate commit messages.
+  {project_context}REPOSITORY CONTEXT: Use the above information to understand the project's purpose and write contextually appropriate commit messages.
 
   {why_context}
 
-  1. Use conventional commit format: SCOPE: description (scope should be capitalized, description start with uppercase)
-  2. Keep subject line under {max_subject_length} characters
-  3. Wrap body lines at {max_body_length} characters
-  4. PRIORITIZE critical changes that affect functionality, behavior, or architecture
-  5. Focus on WHY changes were made and their impact for code reviewers
-  6. Be concise and to the point - help reviewers understand quickly
-  7. Group related changes by importance and logical theme
-  8. Add authors and coauthors to the enfd of commit message
+  CRITICAL PRINCIPLE: The commit message should answer WHY this change was made FIRST, then briefly explain what changed to support that why.
 
-  STRUCTURE:
-  - Start with the most important functional changes
-  - End with "Additional changes:" for minor/non-functional updates (if any)
-  - Skip obvious changes (formatting, imports) unless they're the main purpose
+  PRIORITIZATION ORDER:
+  1. User-provided WHY context (highest priority - drives title and summary)
+  2. Business/functional reason for the change
+  3. Impact on users, developers, or system behavior
+  4. Technical implementation details (lowest priority)
 
-  Common types: feat, fix, docs, style, refactor, test, chore, ci, build, perf, revert
+  FORMATTING GUIDELINES:
+  - Subject line format: TYPE: WHY-focused description (under {max_subject_length} chars)
+  - Subject should capture the REASON/PURPOSE, not just the technical change
+  - Body lines wrapped at {max_body_length} characters
+  - Focus on motivation, impact, and reasoning rather than code changes
 
-  Format your response like this:
+  COMMIT STRUCTURE:
   ```
-  SCOPE: brief description focusing on main change
+  TYPE: Why this change was needed/what problem it solves
 
-  One line summary of the change
+  Brief summary explaining the motivation and impact
 
-  * Critical Changes:
-  - Most important functional/behavioral change and why it matters
-  - Second most important change (if applicable)
+  * Why this change was made:
+  - Primary reason/problem being solved (based on user context)
+  - Business/user impact or benefit
+  - Consequences of not making this change
 
-  * Implementation Details(if needed):
-  - Key technical decisions or architectural changes
+  * What changed to achieve this:
+  - Key functional/behavioral changes that support the why
+  - Technical decisions that directly relate to solving the problem
 
-  * Additional changes:
-  - Minor updates, formatting, documentation tweaks
-
-  * Breaking changes: (if any)
-
-  Authors and coauthors:
-    - Author 1
-    - Author 2
-    - ...
-  ```
-
-  IMPORTANT: If changes are minor (docs, formatting, simple refactoring), keep the message very short. For major changes, focus on the critical functionality impact first.
-
-  EXAMPLES OF GOOD COMMITS:
-
-  Feature addition:
-  ```
-  FEAT: Add OAuth2 authentication system
-
-  Implement secure user authentication with token management
-
-  * Critical Changes:
-  - Added JWT token validation and refresh mechanisms for secure auth
-  - Integrated OAuth2 flow with social login providers (Google, GitHub)
-
-  * Implementation Details:
-  - Created AuthService with token storage and validation logic
-  - Added middleware for route protection and user session management
+  * Implementation notes (only if relevant):
+  - Architecture/design decisions
+  - Non-obvious technical choices
 
   Authors and coauthors:
     - {author_name} <{author_email}>
   ```
 
-  Bug fix:
+  EXAMPLES - Notice how WHY leads:
+
+  Problem-focused feature:
   ```
-  FIX: Resolve memory leak in WebSocket connections
+  FEAT: Enable secure user sessions to prevent unauthorized access
 
-  Prevent connection accumulation during rapid reconnects
+  Implement authentication system to protect sensitive user data
 
-  * Critical Changes:
+  * Why this change was made:
+  - Users reported security concerns about unprotected endpoints
+  - Compliance requirements mandate authenticated access
+  - Current system vulnerable to session hijacking
+
+  * What changed to achieve this:
+  - Added JWT-based authentication with token validation
+  - Integrated OAuth2 flow for social login providers
+  - Protected routes with authentication middleware
+
+  Authors and coauthors:
+    - {author_name} <{author_email}>
+  ```
+
+  Performance-focused fix:
+  ```
+  FIX: Eliminate memory leak to prevent application crashes
+
+  Resolve WebSocket connection buildup causing production outages
+
+  * Why this change was made:
+  - Production servers crashing due to memory exhaustion
+  - Users experiencing frequent disconnections
+  - Memory usage growing unbounded during high traffic
+
+  * What changed to achieve this:
   - Fixed WebSocket cleanup to properly close abandoned connections
   - Added connection pooling with automatic timeout handling
 
@@ -131,15 +132,24 @@ prompt_template: |
     - {author_name} <{author_email}>
   ```
 
-  Simple refactor:
+  Maintainability-focused refactor:
   ```
-  REFACTOR: Extract user validation logic into separate service
+  REFACTOR: Improve code maintainability for faster feature development
 
-  Improve code organization and testability of auth module
+  Extract validation logic to reduce duplication and testing complexity
+
+  * Why this change was made:
+  - Team spending too much time debugging validation issues
+  - Duplicate validation logic causing inconsistent behavior
+  - New features blocked by complex validation integration
+
+  * What changed to achieve this:
+  - Consolidated user validation into dedicated service
+  - Standardized validation error handling across modules
 
   Authors and coauthors:
     - {author_name} <{author_email}>
   ```
 
-  Git diff:
+  Git diff (for technical context only):
   {diff}
