@@ -379,6 +379,12 @@ main() {
         exit 0
     fi
 
+    # Skip cherry-picked commits (when COMMIT_SOURCE is "commit")
+    if [ "$COMMIT_SOURCE" = "commit" ]; then
+        log_info "Skipping AI commit message generation for cherry-picked commit"
+        exit 0
+    fi
+
     # Only run for regular commits and templates
     if [ "$COMMIT_SOURCE" != "" ] && [ "$COMMIT_SOURCE" != "template" ]; then
         exit 0
