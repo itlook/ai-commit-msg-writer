@@ -98,10 +98,17 @@ load_config() {
     # Start with empty config
     echo "{}" > "$temp_config"
 
-    # Check if global config exists
+    # Check if global config exists and is readable
     if [ ! -f "$GLOBAL_CONFIG" ]; then
         log_error "Global configuration file not found at $GLOBAL_CONFIG"
         log_error "Please run the installation script or copy ai-commit-global-config.yaml to $GLOBAL_CONFIG"
+        rm "$temp_config"
+        exit 1
+    fi
+
+    if [ ! -r "$GLOBAL_CONFIG" ]; then
+        log_error "Cannot read global configuration file: $GLOBAL_CONFIG"
+        log_error "Please check file permissions"
         rm "$temp_config"
         exit 1
     fi
@@ -166,10 +173,11 @@ is_repo_excluded() {
     local repo_name
     repo_name=$(basename "$(git rev-parse --show-toplevel)" 2>/dev/null)
 
-    local excluded_repos
-    excluded_repos=$(echo "$config" | yq eval '.excluded_repositories[]' - 2>/dev/null)
+    # Check if excluded_repositories key exists and contains the repo name
+    local is_excluded
+    is_excluded=$(echo "$config" | yq eval ".excluded_repositories | contains([\"$repo_name\"])" - 2>/dev/null)
 
-    echo "$excluded_repos" | grep -q "^$repo_name$" && echo "true" || echo "false"
+    [ "$is_excluded" = "true" ] && echo "true" || echo "false"
 }
 
 # Check if pattern matches any in skip patterns
@@ -370,7 +378,7 @@ main() {
     if [ "$COMMIT_SOURCE" = "message" ]; then
         exit 0
     fi
-    
+
     # Only run for regular commits and templates
     if [ "$COMMIT_SOURCE" != "" ] && [ "$COMMIT_SOURCE" != "template" ]; then
         exit 0
@@ -397,6 +405,7 @@ main() {
 
     # Check if current repository is excluded
     if [ "$(is_repo_excluded "$config")" = "true" ]; then
+        log_info "Repository is excluded from AI hooks"
         exit 0
     fi
 
