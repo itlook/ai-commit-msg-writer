@@ -38,9 +38,9 @@ get_why_context() {
     if [ -n "$WHY" ]; then
         why_content="$WHY"
     elif [ "$(get_config_value "$config" "prompt_for_why" "true")" = "true" ]; then
-        # Prompt for WHY interactively
-        # Use /dev/tty to ensure we can read from terminal even during Git operations
-        if [ -c /dev/tty ]; then
+        # Prompt for WHY interactively only in interactive environments
+        # Skip interactive prompts in CI/CD environments
+        if [ -c /dev/tty ] && [ -z "$CI" ] && [ -z "$GITHUB_ACTIONS" ] && [ -z "$GITLAB_CI" ] && [ -z "$JENKINS_URL" ] && [ "$TERM" != "dumb" ]; then
             echo -e "" > /dev/tty
             echo -e "\033[1;34;1m----------------------------------------------------\033[0m" > /dev/tty
             echo -e "\033[1;34;1m   AI Commit Messages with Reason. Not Just the What\033[0m" > /dev/tty
