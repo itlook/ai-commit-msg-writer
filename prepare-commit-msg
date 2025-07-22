@@ -361,8 +361,18 @@ generate_commit_message() {
 
 # Main execution
 main() {
-    # Only run for regular commits
-    if [ "$COMMIT_SOURCE" != "" ] && [ "$COMMIT_SOURCE" != "message" ]; then
+    # Skip if NOAI environment variable is set (any value)
+    if [ -n "$NOAI" ]; then
+        exit 0
+    fi
+
+    # Skip when user provides their own message with -m flag
+    if [ "$COMMIT_SOURCE" = "message" ]; then
+        exit 0
+    fi
+    
+    # Only run for regular commits and templates
+    if [ "$COMMIT_SOURCE" != "" ] && [ "$COMMIT_SOURCE" != "template" ]; then
         exit 0
     fi
 
