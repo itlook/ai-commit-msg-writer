@@ -215,7 +215,92 @@ collect_project_context() {
     echo "$context"
 }
 
-# Filter diff to exclude ignored files
+# Enhanced file filtering functions
+
+# Get file size utility
+get_file_size() {
+    local file_path="$1"
+
+    if [ -f "$file_path" ]; then
+        stat -f%z "$file_path" 2>/dev/null || stat -c%s "$file_path" 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
+# Check if file matches any excluded pattern
+is_file_excluded() {
+    local file_path="$1"
+    local config="$2"
+
+    # Get all excluded file patterns
+    local patterns
+    patterns=$(echo "$config" | yq eval '.excluded_files[]' - 2>/dev/null)
+
+    while IFS= read -r pattern; do
+        if [ -n "$pattern" ]; then
+            # Convert glob pattern to match file path
+            if [[ "$file_path" == $pattern ]] || [[ "$file_path" =~ $(echo "$pattern" | sed 's/\*/.*/g' | sed 's/\?/./g') ]]; then
+                return 0  # Exclude
+            fi
+        fi
+    done <<< "$patterns"
+
+    return 1  # Don't exclude
+}
+
+
+# Check if file is binary by content
+is_binary_by_content() {
+    local file_path="$1"
+    local config="$2"
+
+    # Check if binary content detection is enabled
+    local detect_binary_content
+    detect_binary_content=$(echo "$config" | yq eval '.file_filtering.detect_binary_content // true' - 2>/dev/null)
+
+    if [[ "$detect_binary_content" == "true" ]] && [ -f "$file_path" ]; then
+        # Use file command to detect binary content
+        if command -v file >/dev/null 2>&1 && file "$file_path" | grep -q "binary"; then
+            return 0  # Is binary
+        fi
+
+        # Alternative: check for null bytes in first 1KB
+        if head -c 1024 "$file_path" 2>/dev/null | grep -q $'\0'; then
+            return 0  # Is binary
+        fi
+    fi
+
+    return 1  # Not binary
+}
+
+# Main function to check if file should be excluded
+should_exclude_file() {
+    local file_path="$1"
+    local config="$2"
+
+    # Check if enhanced filtering is enabled
+    local filtering_enabled
+    filtering_enabled=$(echo "$config" | yq eval '.file_filtering.enabled // true' - 2>/dev/null)
+
+    if [[ "$filtering_enabled" != "true" ]]; then
+        return 1  # Don't exclude if filtering is disabled
+    fi
+
+    # Check if file matches excluded patterns
+    if is_file_excluded "$file_path" "$config"; then
+        return 0  # Exclude
+    fi
+
+    # Check if file is binary by content
+    if is_binary_by_content "$file_path" "$config"; then
+        return 0  # Exclude
+    fi
+
+    return 1  # Don't exclude
+}
+
+# Filter diff to exclude ignored files (legacy function - kept for compatibility)
 filter_diff() {
     local diff=$1
     local config=$2
@@ -266,6 +351,48 @@ filter_diff() {
     '
 
     rm "$temp_patterns"
+}
+
+# Enhanced diff filtering with comprehensive file exclusion
+filter_diff_enhanced() {
+    local raw_diff="$1"
+    local config="$2"
+    local filtered_diff=""
+    local current_file=""
+    local include_file=true
+    local file_content=""
+
+    while IFS= read -r line; do
+        # Detect file headers
+        if [[ "$line" =~ ^diff\ --git ]]; then
+            # Process previous file if any
+            if [[ -n "$current_file" ]] && [[ "$include_file" == true ]]; then
+                filtered_diff+="$file_content"
+            fi
+
+            # Start new file
+            current_file=$(echo "$line" | sed 's/.*b\///')
+            include_file=true
+            file_content="$line"$'\n'
+
+            # Check if file should be excluded
+            if should_exclude_file "$current_file" "$config"; then
+                include_file=false
+                log_info "Excluding file from analysis: $current_file"
+            fi
+
+        elif [[ "$include_file" == true ]]; then
+            file_content+="$line"$'\n'
+        fi
+
+    done <<< "$raw_diff"
+
+    # Process last file
+    if [[ -n "$current_file" ]] && [[ "$include_file" == true ]]; then
+        filtered_diff+="$file_content"
+    fi
+
+    echo "$filtered_diff"
 }
 
 # Generate commit message
@@ -325,8 +452,24 @@ generate_commit_message() {
     fi
 
     local ai_response
-    ai_response=$(cat "$temp_prompt" | claude 2>&1)
-    local ai_exit_code=$?
+    local ai_exit_code
+
+    # Check if AI_MOCK mode is enabled
+    if [ "$AI_MOCK" = "1" ]; then
+        log_info "AI_MOCK mode enabled - generating mock commit message"
+        ai_response="feat: add new functionality
+
+This commit implements the requested changes based on the diff analysis.
+The changes improve the codebase by adding new features and fixing issues.
+
+- Add new features as requested
+- Improve existing functionality
+- Fix bugs and issues identified"
+        ai_exit_code=0
+    else
+        ai_response=$(cat "$temp_prompt" | claude 2>&1)
+        ai_exit_code=$?
+    fi
 
     rm "$temp_prompt"
 
@@ -446,8 +589,9 @@ main() {
         exit 0
     fi
 
-    # Filter diff to exclude ignored files
+    # Filter diff to exclude ignored files (legacy + enhanced filtering)
     diff=$(filter_diff "$diff" "$config")
+    diff=$(filter_diff_enhanced "$diff" "$config")
 
     # If no relevant changes after filtering, skip
     if [ -z "$diff" ]; then

@@ -16,6 +16,7 @@ skip_patterns:
   - "^SQUASH:"
   - "^Merge branch"
   - "^Merge pull request"
+# Legacy patterns (kept for backwards compatibility)
 file_ignore_patterns:
   - "*.log"
   - "*.tmp"
@@ -31,6 +32,66 @@ file_ignore_patterns:
   - "target/"
   - "bin/"
   - "obj/"
+
+# Enhanced file filtering - single consolidated list
+excluded_files:
+  # Lock files
+  - "package-lock.json"
+  - "yarn.lock"
+  - "pnpm-lock.yaml"
+  - "Cargo.lock"
+  - "Gemfile.lock"
+  - "composer.lock"
+  - "Pipfile.lock"
+  - "poetry.lock"
+  - "mix.lock"
+  - "go.sum"
+  - "pubspec.lock"
+  # Generated/compiled files
+  - "*.min.js"
+  - "*.min.css"
+  - "*.bundle.js"
+  - "*.chunk.js"
+  - "*.pyc"
+  - "*.class"
+  - "*.o"
+  - "*.exe"
+  - "*.dll"
+  - "*.so"
+  - "*.dylib"
+  # Binary files
+  - "*.png"
+  - "*.jpg"
+  - "*.jpeg"
+  - "*.gif"
+  - "*.bmp"
+  - "*.ico"
+  - "*.pdf"
+  - "*.zip"
+  - "*.tar.gz"
+  - "*.rar"
+  - "*.7z"
+  - "*.mp3"
+  - "*.mp4"
+  - "*.avi"
+  - "*.mov"
+  - "*.wmv"
+  - "*.flv"
+  - "*.doc"
+  - "*.docx"
+  - "*.xls"
+  - "*.xlsx"
+  - "*.ppt"
+  - "*.pptx"
+  # Meta/log files
+  - "CHANGELOG.md"
+  - "CHANGELOG.txt"
+  - "*.temp"
+
+# File filtering settings
+file_filtering:
+  enabled: true
+  detect_binary_content: true
 excluded_repositories:
   - "dotfiles"
   - "temp-repo"
@@ -55,8 +116,11 @@ prompt_template: |
   REQUIREMENTS:
   - Subject: TYPE: Brief WHY-focused description ({max_subject_length} chars max)
   - Body: Brief motivation + bullet list of major changes only
+  - Body lines wrapped at {max_body_length} characters
   - Group related minor changes, omit irrelevant details
   - Use conventional commit types
+  - If there are breaking changes or updates to APIs/configuration, include a separate section summarizing them.
+  - Only if the commit includes both code changes and GitHub Actions (CI) changes, add a separate section summarizing the CI changes.
 
   STRUCTURE:
   ```
@@ -70,6 +134,7 @@ prompt_template: |
 
   Authors and coauthors:
     - {author_name} <{author_email}>
+
   ```
 
   EXAMPLES:
